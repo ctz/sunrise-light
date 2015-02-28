@@ -102,8 +102,10 @@ static void build_pixels(void)
 
 static void emit_pixels(int pin, const uint32_t *pixels, unsigned npixels)
 {
+  noInterrupts();
   for (unsigned i = 0; i < npixels; i++)
     emit24(pixels[i], pin);
+  interrupts();
 }
 
 static void set_all_colours(uint32_t v)
@@ -182,10 +184,8 @@ static void update_leds(void)
     digitalWrite(WS2812_PIN_FIRST + col, LOW);
     
   build_pixels();
-  noInterrupts();
   for (unsigned col = 0; col < NCOLS; col++)
     emit_pixels(WS2812_PIN_FIRST + col, pixels[col], NROWS);
-  interrupts();
 }
 
 static int serial_transact(const char *send, const char *expect)
@@ -241,17 +241,30 @@ static int serial_transact(const char *send, const char *expect)
 static int serial_read(uint8_t *out, size_t nout)
 {
   int count = 0;
+  int retryRead = 10;
+  
+  SerialUSB.print("r");
   
   while (nout && Serial1.available())
   {
+    SerialUSB.print("b");
     *out = Serial1.read();
+    SerialUSB.print("B");
     out++;
     nout--;
     count++;
     
-    if (nout && !Serial1.available())
+    if (nout && !Serial1.available() && retryRead)
+    {
       delay(5);
+      retryRead--;
+    }
+    
+    if (retryRead == 0)
+      break;
   }
+  
+  SerialUSB.println("e");
   
   return count;
 }
@@ -350,20 +363,27 @@ void setup()
   
   delay(400);
   check_config();
+    
+  if (SerialUSB.isConnected() && (SerialUSB.getDTR() || SerialUSB.getRTS()))
+  {
+    // have a console
+  } else {
+    SerialUSB.end();
+  }
 }
 
 void loop()
 {
+  toggleLED();
   read_command();
   update_leds();
+  toggleLED();
   
   delay(50);
   counter++;
     
-  if (counter == 20)
+  if (counter == 10)
   {
-    toggleLED();
-    
 #if 0
     uint32_t colour = PACK(random(0x00, 0xf), random(0x00, 0xf), random(0x00, 0xf));
     uint32_t instr = random(5);
