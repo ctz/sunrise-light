@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference android:key="off" android:title="All off" />
+    <Preference android:key="random-ring" android:title="Random ring on" />
+    <Preference android:key="shift" android:title="Shift up" />
+    <Preference android:key="rotate" android:title="Rotate" />
+    <Preference android:key="direct" android:title="Direct" />
+    <Preference android:key="blend" android:title="Blend" />
+
+</PreferenceScreen>
